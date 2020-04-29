@@ -109,6 +109,8 @@ class BreakManager(Manager):
 
     def manage(self):
         pass
+
+
 if __name__ == "__main__":
     club_house = Room(RType.SC)  # room
 
