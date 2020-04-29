@@ -55,7 +55,7 @@ is for.
 ## Setup and Running
 
 In order to get the program running, install all of the dependencies by entering
-into the terminal:
+into the terminal and make sure you have python3.7.6:
 
 ```pipenv install --dev```
 
