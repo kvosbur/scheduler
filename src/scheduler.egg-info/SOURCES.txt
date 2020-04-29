@@ -1,0 +1,14 @@
+README.md
+setup.cfg
+setup.py
+src/_scheduler/__init__.py
+src/_scheduler/manager.py
+src/_scheduler/timemodule.py
+src/_scheduler/work.py
+src/scheduler/__init__.py
+src/scheduler/__main__.py
+src/scheduler.egg-info/PKG-INFO
+src/scheduler.egg-info/SOURCES.txt
+src/scheduler.egg-info/dependency_links.txt
+src/scheduler.egg-info/not-zip-safe
+src/scheduler.egg-info/top_level.txt
