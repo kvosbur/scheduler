@@ -24,25 +24,22 @@ class RoomManager(Manager):
     def manage(self) -> (List[TimePeriod], List[List[Staff]]):
         available_staff = []
         staff = self._get_available_staff(self.staff)
-        while(True):
-            if self._is_enough_coverage(staff):
+        while True:
+            if not self._is_enough_coverage(staff):
+                return {}
+
                 breakdown = self._get_breakdown(staff)
                 result = self._verify_breakdown(breakdown, len(staff))
                 if result:
                     return self.get_possible_shifts(breakdown)
-                else:
+
                     staff = self._remove_extra_staff(breakdown)
-            else:
-                return {}
     
     def _get_available_staff(self, staff: List):
         """ Given a list of staff, this checks to see which
         ones are available """
-        avail_staff = []
-        for s in staff:
-            if s._is_coincides(self.room):
-                avail_staff.append(s)
-        return avail_staff
+        
+        return [s for s in staff if s._coincides(self.room)]
 
     def _get_breakdown(self, staff: List) -> Dict[TimePeriod, List[Staff]]:
         room_schedule = defaultdict(list)
