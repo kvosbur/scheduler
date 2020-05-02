@@ -72,12 +72,8 @@ class TimePeriod:
             return True
         return False
 
-    def _coincides(self, t2):
-        composition1 = set(self.comp)
-        composition2 = set(t2.comp)
-        in_common = composition1 & composition2
-        
-        return bool(in_common)
+    def _coincides(self, other):
+        return max(self.st, other.st) < min(self.et, other.et)
 
     def _get_composition(self, duration: timedelta) -> int:
         """ It splits the duration into 30 minute segments and creates/returns a list
