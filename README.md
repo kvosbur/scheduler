@@ -8,7 +8,7 @@ and uses that to try and split the room into different times for the staff to be
 there without overlapping them/ having them work the room more than once per shift.
 
 Currently, the front end portion is only set to schedule for one room. The club house
-which is open from 9AM-2:30PM. The goal is to add more algorithms in the back end in
+which is open from 9:30M-2:30PM. The goal is to add more algorithms in the back end in
 order to get it to schedule all three rooms by splitting up their open times and
 splitting up the staff who work that day evenyl amongst the rooms.
 
@@ -16,29 +16,58 @@ Eventually, I'll add more functionality to the break manager which will provide
 staff with their breaks without it overlapping with the times they're covering a
 room.
 
+## Example
+
+On a normal day, there would be around 6 people working between those three rooms.
+The shifts looked like this normally.
+* 9-5PM Staff1
+* 9-5PM Staff2
+* 9-3PM Staff3
+* 10-3PM Staff4
+* 1-9PM Staff5
+
+|            | Staff1   |  Staff2  | Staff3     | Staff4      | Staff 5
+-------------:|:----------:|:----------:|:------------:|:-------------:|:-------:
+9:00-9:15AM | ClubHouse | Subcellar | GreatHall | -           | -
+9:15-9:30AM | ClubHouse | Subcellar | GreatHall | -           | -
+9:30-9:45AM | ClubHouse | Subcellar | GreatHall | -           | -
+9:45-10:00AM | ClubHouse | Subcellar | GreatHall | -          | -
+10:00-10:15AM | ClubHouse | Subcellar | GreatHall | GreatHall | -
+10:15-10:30AM | ClubHouse | Subcellar | GreatHall | GreatHall | -
+10:30-10:45AM | Subcellar | ClubHouse | GreatHall | GreatHall | -
+10:45-11:00AM | Subcellar | ClubHouse | GreatHall | GreatHall | -
+11:00-11:15AM | Subcellar | ClubHouse | Break | GreatHall | -
+11:15-11:30AM | Subcellar | ClubHouse | Break | GreatHall | -
+11:30-11:45AM | Subcellar | ClubHouse | Break | GreatHall | -
+11:45-12:00PM | Subcellar | ClubHouse | Break | GreatHall | -
+12:00-12:15PM | Break | GreatHall | ClubHouse | SubCellar | -
+12:15-12:30PM | Break | GreatHall | ClubHouse | SubCellar | -
+12:30-12:45PM | Break | GreatHall | ClubHouse | SubCellar | -
+12:45-1:00PM  | Break | GreatHall | ClubHouse | SubCellar | -
+1:00-1:15PM | GreatHall | Break     | SubCellar | Break | ClubHouse
+1:15-1:30PM | GreatHall | Break     | SubCellar | Break | ClubHouse
+1:30-1:45PM | GreatHall | Break     | SubCellar | GreatHall | ClubHouse
+1:45-2:00PM | GreatHall | Break     | SubCellar | GreatHall | ClubHouse
+2:00-2:15PM | GreatHall | GreatHall | SubCellar | GreatHall | ClubHouse
+2:15-2:30PM | GreatHall | GreatHall | SubCellar | GreatHall | ClubHouse
+2:30-2:45PM | GreatHall | GreatHall | GreatHall | GreatHall | GreatHall
+2:45-3:00PM | GreatHall | GreatHall | GreatHall | GreatHall | GreatHall
+3:00-3:15PM | GreatHall | GreatHall | - | - | GreatHall
+3:15-3:30PM | GreatHall | GreatHall | - | - | GreatHall
+3:30-3:45PM | GreatHall | GreatHall | - | - | GreatHall
+3:45-4:00PM | GreatHall | GreatHall | - | - | GreatHall
+4:00-4:15PM | GreatHall | GreatHall | - | - | Break
+4:15-4:30PM | GreatHall | GreatHall | - | - | Break
+4:30-4:45PM | GreatHall | GreatHall | - | - | Break
+4:45-5:00PM | GreatHall | GreatHall | - | - | Break
+5:00-6:00PM | - | - | - | - | GreatHall
+6:00-7:00PM | - | - | - | - | GreatHall
+7:00-8:00PM | - | - | - | - | GreatHall
+8:00-9:00PM | - | - | - | - | GreatHall
+
+
 
 ## Structure
-This is the current file structure. It's probably overly done, but I was roughly
-basing the structure on [pytest's](https://github.com/pytest-dev/pytest). Yeah,
-they have a much much bigger code base, but I just wanted to learn about packaging
-and wanted to have a nice file structure. 
-
-```
-scheduler
-|_________ src
-|          |________ scheduler
-|          |        |________ __init__.py
-|          |        |________ __main__.py
-|          |
-|          |_______ _scheduler
-|                   |________ __init__.py
-|                   |________ work.py
-|                   |________ timemodule.py
-|                   |________ manager.py
-|_________testing
-|
-|_________setup.py
-```
 
 `timemodule.py` contains the unit of time for this project, the **TimePeriod**. 
 TimePeriods have a start and end time which are
