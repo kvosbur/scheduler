@@ -86,26 +86,22 @@ class Staff:
 class Room:
     def __init__(self, name: RType):
         room_info = self._room_assignment(name)
-        self.max_cap = room_info["max_cap"]
         self.name = name
-        self.time_open = room_info["time_open"]
 
     def _room_assignment(self, name: RType) -> Dict[str, Any]:
-        room_info = {}
-        times = [datetime(1, 1, 1, 9, 0),
+        times = [datetime(1, 1, 1, 9, 30),
                  datetime(1, 1, 1, 21, 0),
                  datetime(1, 1, 1, 14, 30, 0)]
 
         if name == RType.CH:
-            room_info["max_cap"] = 2
-            room_info["time_open"] = TimePeriod(times[0], times[2])
+            self.max_cap = 2
+            self.time_open = TimePeriod(times[0], times[2])
         elif name == RType.GH:
-            room_info["max_cap"] = 3
-            room_info["time_open"] = TimePeriod(times[0], times[1])
+            self.max_cap = 3
+            self.time_open = TimePeriod(times[0], times[1])
         elif name == RType.SC:
-            room_info["max_cap"] = 1
-            room_info["time_open"] = TimePeriod(times[0], times[2])
-        return room_info
+            self.max_cap = 1
+            self.time_open = TimePeriod(times[0], times[2])
 
 
 if __name__ == "__main__":
