@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any
 
 from _scheduler.timemodule import TimePeriod
@@ -19,11 +19,11 @@ class RType(Enum):
 class Shift(TimePeriod):
     def __init__(self, st: int, et: int):
         super().__init__(st, et)
-        hours = self.dur.seconds // 3600
+        hours = self.dur // timedelta(hours=1)
         if hours > 5:
-            self.break_length = 1
+            self.break_length = timedelta(hours=1)
         else:
-            self.break_length = .5
+            self.break_length = timedelta(hours=.5)
 
 
 class Staff:
@@ -37,15 +37,13 @@ class Staff:
         self.emp_type = emp_type
 
     def __str__(self):
-        return f'{self.name}'
+        return self.name
 
     def __repr__(self):
         return f'Staff("{self.name}", {self.emp_type}, Shift={self.shift})'
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.name == other.name
-        return False
+        return isinstance(other, self.__class__) and self.name == other.name
     
     def __hash__(self):
         return hash(self.name)
