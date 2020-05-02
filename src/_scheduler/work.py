@@ -60,7 +60,7 @@ class Staff:
             i += .5
         return shifts
 
-    def _is_coincides(self, shift: Any) -> bool:
+    def _coincides(self, shift: Any) -> bool:
         """ This function determins whether the staff object's
         shift happens within the same time as another TimePeriod
         returns true if it does, and false if it doesn't."""
