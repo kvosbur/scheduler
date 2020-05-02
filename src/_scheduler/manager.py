@@ -28,12 +28,12 @@ class RoomManager(Manager):
             if not self._is_enough_coverage(staff):
                 return {}
 
-                breakdown = self._get_breakdown(staff)
-                result = self._verify_breakdown(breakdown, len(staff))
-                if result:
-                    return self.get_possible_shifts(breakdown)
+            breakdown = self._get_breakdown(staff)
+            result = self._verify_breakdown(breakdown, len(staff))
+            if result:
+                return self.get_possible_shifts(breakdown)
 
-                    staff = self._remove_extra_staff(breakdown)
+            staff = self._remove_extra_staff(breakdown)
     
     def _get_available_staff(self, staff: List):
         """ Given a list of staff, this checks to see which
@@ -57,13 +57,15 @@ class RoomManager(Manager):
                           expected: int) -> bool:
         valid_staff = set()
         for s in breakdown.values():
-            valid_staff = valid_staff.union(set(s))
+            valid_staff.update(s)
         return len(valid_staff) == expected
     
-    def _remove_extra_staff(self, breakdown) -> List[Staff]:
+    def _remove_extra_staff(self,
+                            breakdown: Dict[TimePeriod, List[Staff]]
+                            ) -> List[Staff]:
         valid_staff = set()
         for s in breakdown.values():
-            valid_staff = valid_staff.union(set(s))
+            valid_staff.update(s)
         return list(valid_staff)
 
     def _is_enough_coverage(self, staff: List) -> bool:
@@ -72,7 +74,7 @@ class RoomManager(Manager):
         room_time = set(self.room.time_open.comp)
         total_coverage = set()
         for s in staff:
-            total_coverage  = total_coverage.union(s.shift.comp)
+            total_coverage.update(s.shift.comp)
         return room_time.issubset(total_coverage)
 
     def _find_valid_path(self, time_list: List,
