@@ -32,15 +32,25 @@ class ManyRoomsManager(Manager):
         return (sorted(self.rooms, key=lambda room: room.time_open.et))[-1].time_open.et
 
     def insert_into_room(self, curr_time: datetime, s: Staff):
-        sorted(self.rooms, key=lambda room: room.curr_cap)
-        for room in self.rooms:
+        sorted_rooms = sorted(self.rooms, key=lambda room: room.curr_cap)
+        for room in sorted_rooms:
             if room.curr_cap < room.max_cap and room.time_open._contains_time(curr_time):
                 room.curr_cap += 1
                 s.last_assigned = curr_time
                 s.assigned_to = room.name
-                print("Insert", s, "into room", room, "current cap:", room.curr_cap)
+                print("Insert1", s, "into room", room, "current cap:", room.curr_cap)
                 return
-        print("Could not find a match!")
+
+        # not the best, but it seems it is okay in certain circumstances to go over max capacity if there is no
+        # capacity open in any room. So put in room with lowest current capacity
+        for room in sorted_rooms:
+            if room.time_open._contains_time(curr_time):
+                room.curr_cap += 1
+                s.last_assigned = curr_time
+                s.assigned_to = room.name
+                print("Insert2", s, "into room", room, "current cap:", room.curr_cap)
+                break
+        # print("Could not find a match!")
 
     def new_staff(self, curr_time):
         ret = []
@@ -116,6 +126,16 @@ class ManyRoomsManager(Manager):
                 s.last_assigned = None
                 s.assigned_to = None
 
+    def room_closes(self, curr_time):
+        for r in self.rooms:
+            if r.time_open.et == curr_time:
+                print("Found room close for:", r)
+                # must move all staff from room since it is closing
+                for s in self.staff:
+                    if s.assigned_to == r.name:
+                        self.insert_into_room(curr_time, s)
+                r.curr_cap = 0
+
 
     def manage(self):
         print(self.get_room_late_end())
@@ -129,7 +149,7 @@ class ManyRoomsManager(Manager):
             print(curr_time)
             self.insert_new_staff(curr_time)
             self.leaving_staff(curr_time)
-            # TODO check if a room closes
+            self.room_closes(curr_time)
             self.do_switch_staff(curr_time)
             curr_time += delta
 
@@ -231,18 +251,23 @@ class BreakManager(Manager):
 
 if __name__ == "__main__":
     club_house = Room(RType.SC)  # room
-    rooms = [Room(RType.SC), Room(RType.CH)]
+    rooms = [Room(RType.SC), Room(RType.CH), Room(RType.GH)]
 
-    shift1 = Shift(datetime(1, 1, 1, 12, 0, 0), datetime(1, 1, 1, 20, 0, 0))
-    isaac = Staff("Isaac", EType.COUNSELOR, shift=shift1)  # employee1
+    shift1 = Shift(datetime(1, 1, 1, 9, 0, 0), datetime(1, 1, 1, 17, 0, 0))
+    enpu = Staff("Enpu", EType.COUNSELOR, shift=shift1)
 
-    shift3 = Shift(datetime(1, 1, 1, 9, 0, 0), datetime(1, 1, 1, 13, 0, 0))
-    enpu = Staff("Enpu", EType.COUNSELOR, shift=shift3)  # employee2
+    michelle = Staff("Michelle", EType.COUNSELOR, shift=shift1)
 
     shift2 = Shift(datetime(1, 1, 1, 9, 0, 0), datetime(1, 1, 1, 15, 0, 0))
-    michelle = Staff("Michelle", EType.COUNSELOR, shift=shift2)  # employee2
+    isaac = Staff("Isaac", EType.COUNSELOR, shift=shift2)
 
-    todays_staff = [isaac, enpu, michelle]  # list of working employees
+    shift2 = Shift(datetime(1, 1, 1, 10, 0, 0), datetime(1, 1, 1, 15, 0, 0))
+    alice = Staff("Alice", EType.COUNSELOR, shift=shift2)
+
+    shift2 = Shift(datetime(1, 1, 1, 13, 0, 0), datetime(1, 1, 1, 21, 0, 0))
+    bob = Staff("Bob", EType.COUNSELOR, shift=shift2)
+
+    todays_staff = [isaac, enpu, michelle, alice, bob]  # list of working employees
 
     chmanager = ManyRoomsManager(rooms, todays_staff)  # to manage room
     chmanager.manage()
