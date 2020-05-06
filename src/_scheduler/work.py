@@ -36,7 +36,6 @@ class Staff:
         self.name = name
         self.emp_type = emp_type
         self.last_assigned = None
-        self.assigned_to = None
 
     def __str__(self):
         return self.name
@@ -213,12 +212,6 @@ class TimeAssignment:
             print("To:", self.room_assignments[room_index].staff[staff_index],
                   self.room_assignments[room_index].room,
                   ",", self.room_assignments[second[0]].staff[second[1]], self.room_assignments[second[0]].room)
-
-
-
-
-
-
 
 
 class Schedule:
