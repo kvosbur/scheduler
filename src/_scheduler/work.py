@@ -88,9 +88,6 @@ class Room:
         room_info = self._room_assignment(name)
         self.name = name
 
-        # used for schedule making purposes only
-        self.curr_cap = 0
-
     def __repr__(self):
         return f'Room("{self.name}")'
 
@@ -108,6 +105,153 @@ class Room:
         elif name == RType.SC:
             self.max_cap = 1
             self.time_open = TimePeriod(times[0], times[2])
+
+
+class RoomAssignment:
+    """
+    Keeps track of which employees have been assigned to a given room
+    """
+    def __init__(self, room: Room):
+        self.room = room
+        self.staff = []
+
+    def add_staff(self, s:Staff):
+        self.staff.append(s)
+        print("Insert", s, "into room", self.room, "current cap:", self.curr_cap)
+
+    @property
+    def curr_cap(self):
+        return len(self.staff)
+
+    @property
+    def max_cap(self):
+        return self.room.max_cap
+
+    @property
+    def time_open(self):
+        return self.room.time_open
+
+    def remove_staff(self, s: Staff):
+        # assume that staff is in list
+        for temp in range(len(self.staff)):
+            if s.name == self.staff[temp].name:
+                del self.staff[temp]
+                break
+
+    def contains_staff(self, s: Staff) -> bool:
+        for temp in self.staff:
+            if s.name == temp.name:
+                return True
+        return False
+
+
+class TimeAssignment:
+    """
+    Keeps track of the assignments to all rooms at a given time value
+    """
+    def __init__(self, curr_time: datetime):
+        self.curr_time = curr_time
+        self.room_assignments = []
+
+    def add_room_assignment(self, room_assignment: RoomAssignment):
+        self.room_assignments.append(room_assignment)
+
+    def contains_staff(self, s: Staff) -> bool:
+        for room_assignment in self.room_assignments:
+            if room_assignment.contains_staff(s):
+                return True
+        return False
+
+    def fill_spot(self, target_room: RoomAssignment):
+        for room_assignment in self.room_assignments:
+            if room_assignment.curr_cap > 1:
+                room_assignment.staff.sort(key=lambda s: s.last_assigned)
+                s = room_assignment.staff.pop(0)
+                print("Moving", s, "From", room_assignment.room, "To", target_room.room)
+                s.last_assigned = self.curr_time
+                target_room.add_staff(s)
+                return
+
+
+    def remove_staff(self, s: Staff):
+        for room_assignment in self.room_assignments:
+            if room_assignment.contains_staff(s):
+                print(s, "is leaving")
+                room_assignment.remove_staff(s)
+                if room_assignment.curr_cap == 0:
+                    self.fill_spot(room_assignment)
+                return
+
+    def find_staff_to_swap(self, cutoff: timedelta, start_index: int):
+        if start_index >= len(self.room_assignments):
+            return None
+        for index, value in enumerate(self.room_assignments[start_index:]):
+            for staff_index, staff in enumerate(value.staff):
+                if self.curr_time - staff.last_assigned >= cutoff:
+                    return index, staff_index
+        return None
+
+    def swap_staff(self, cutoff: timedelta):
+        # this is really clunky, would love to have a better solution that isn't as clunky
+        while True:
+            change = False
+            first = self.find_staff_to_swap(cutoff, 0)
+            if first is None:
+                break
+            room_index, staff_index = first
+            second = self.find_staff_to_swap(cutoff, room_index + 1)
+            if second is None:
+                break
+            # found 2 staff to swap so do swap
+            print("Swap from:", self.room_assignments[room_index].staff[staff_index], self.room_assignments[room_index].room,
+                  ",", self.room_assignments[second[0]].staff[second[1]], self.room_assignments[second[0]].room)
+            temp_staff = self.room_assignments[room_index].staff[staff_index]
+            temp_staff.last_assigned = self.curr_time
+            self.room_assignments[second[0]].staff[second[1]].last_assigned = self.curr_time
+            self.room_assignments[room_index].staff[staff_index] = self.room_assignments[second[0]].staff[second[1]]
+            self.room_assignments[second[0]].staff[second[1]] = temp_staff
+            print("To:", self.room_assignments[room_index].staff[staff_index],
+                  self.room_assignments[room_index].room,
+                  ",", self.room_assignments[second[0]].staff[second[1]], self.room_assignments[second[0]].room)
+
+
+
+
+
+
+
+
+class Schedule:
+    def __init__(self):
+        self.time_assignments = []
+
+    def add_time_assignment(self, time_assignement: TimeAssignment):
+        self.time_assignments.append(time_assignement)
+
+    def pretty_print_schedule(self):
+        # print header
+        print("{:>22}".format(""), end="|")
+        for room in self.time_assignments[0].room_assignments:
+            for i in range(room.max_cap):
+                if i == 0:
+                    print("{:>10}".format(room.room.name), end="")
+                else:
+                    print("{:>10}".format(""), end="")
+            print("|", end = "")
+        print("")
+
+        for time_assignment in self.time_assignments:
+            print("{:>22}".format(str(time_assignment.curr_time)), end="|")
+            for room in time_assignment.room_assignments:
+                for i in range(room.max_cap):
+                    if i < room.curr_cap:
+                        print("{:>10}".format(room.staff[i].name), end="")
+                    else:
+                        print("{:>10}".format("-"), end="")
+                print("|", end="")
+            print("")
+
+
 
 
 if __name__ == "__main__":

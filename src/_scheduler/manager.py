@@ -4,8 +4,9 @@ from collections import defaultdict
 from copy import deepcopy
 from typing import List, Dict
 from datetime import datetime, timedelta
+from copy import deepcopy
 
-from _scheduler.work import Room, Staff, RType, EType, Shift
+from _scheduler.work import Room, Staff, RType, EType, Shift, RoomAssignment, TimeAssignment, Schedule
 from _scheduler.timemodule import TimePeriod
 
 
@@ -22,48 +23,59 @@ class ManyRoomsManager(Manager):
     def __init__(self, rooms: List[Room], staff: List[Staff]):
         super().__init__(staff)
         self.rooms = rooms
-        # sort staff by their starttime
-        sorted(self.staff, key=lambda x: x.shift.st)
+        self.schedule = Schedule()
 
-    def get_room_early_start(self):
+    def get_room_early_start(self) -> datetime:
         return (sorted(self.rooms, key=lambda room: room.time_open.et))[0].time_open.st
 
-    def get_room_late_end(self):
+    def get_room_late_end(self) -> datetime:
         return (sorted(self.rooms, key=lambda room: room.time_open.et))[-1].time_open.et
 
-    def insert_into_room(self, curr_time: datetime, s: Staff):
-        sorted_rooms = sorted(self.rooms, key=lambda room: room.curr_cap)
-        for room in sorted_rooms:
-            if room.curr_cap < room.max_cap and room.time_open._contains_time(curr_time):
-                room.curr_cap += 1
-                s.last_assigned = curr_time
-                s.assigned_to = room.name
-                print("Insert1", s, "into room", room, "current cap:", room.curr_cap)
+    def insert_into_room(self, time_assignment: TimeAssignment, s: Staff):
+        sorted_rooms = sorted(time_assignment.room_assignments, key=lambda room_assignment: room_assignment.curr_cap)
+        for room_assignment in sorted_rooms:
+            if room_assignment.curr_cap < room_assignment.max_cap and room_assignment.time_open._contains_time(time_assignment.curr_time):
+                s.last_assigned = time_assignment.curr_time
+                room_assignment.add_staff(s)
                 return
 
         # not the best, but it seems it is okay in certain circumstances to go over max capacity if there is no
         # capacity open in any room. So put in room with lowest current capacity
-        for room in sorted_rooms:
-            if room.time_open._contains_time(curr_time):
-                room.curr_cap += 1
-                s.last_assigned = curr_time
-                s.assigned_to = room.name
-                print("Insert2", s, "into room", room, "current cap:", room.curr_cap)
-                break
-        # print("Could not find a match!")
+        for room_assignment in sorted_rooms:
+            if room_assignment.time_open._contains_time(time_assignment.curr_time):
+                s.last_assigned = time_assignment.curr_time
+                room_assignment.add_staff(s)
+                return
 
-    def new_staff(self, curr_time):
+        raise Exception("Could not find spot to insert employee to. There were no open rooms")
+
+    def new_staff(self, time_assignment: TimeAssignment) -> List[Staff]:
         ret = []
         for s in self.staff:
-            if s.last_assigned is None and s.shift._contains_time(curr_time):
+            if not time_assignment.contains_staff(s) and s.shift._contains_time(time_assignment.curr_time):
                 ret.append(s)
         return ret
 
-    def insert_new_staff(self, curr_time):
-        staff_to_insert = self.new_staff(curr_time)
+    def insert_new_staff(self, time_assignment: TimeAssignment):
+        staff_to_insert = self.new_staff(time_assignment)
         for s in staff_to_insert:
-            self.insert_into_room(curr_time, s)
+            self.insert_into_room(time_assignment, s)
 
+    def leaving_staff(self, time_assignment: TimeAssignment):
+        for s in self.staff:
+            if s.shift.et == time_assignment.curr_time:
+                time_assignment.remove_staff(s)
+                s.last_assigned = None
+
+    def room_closes(self, time_assignment: TimeAssignment):
+        for r in time_assignment.room_assignments:
+            if r.time_open.et == time_assignment.curr_time:
+                print("Found room close for:", r.room)
+                # must move all staff from room since it is closing
+                while len(r.staff) > 0:
+                    self.insert_into_room(time_assignment, r.staff.pop())
+
+    """
     def get_staff_to_switch(self, curr_time: datetime) -> List[Staff]:
         ret = []
         for s in self.staff:
@@ -79,7 +91,6 @@ class ManyRoomsManager(Manager):
         staff_1.last_assigned = curr_time
         staff_2.last_assigned = curr_time
         print("to:", staff_1, staff_1.assigned_to, ",", staff_2, staff_2.assigned_to)
-
 
     def do_switch_staff(self, curr_time: datetime):
         staff_to_switch = self.get_staff_to_switch(curr_time)
@@ -97,45 +108,7 @@ class ManyRoomsManager(Manager):
                         break
 
                 index += 1
-
-    def resistuate_staff_to_room(self, room: Room):
-        for r in self.rooms:
-            if r.name != room.name and r.curr_cap > 1:
-                temp_sort = sorted(self.staff, key=lambda s: s.last_assigned)
-                for s in temp_sort:
-                    if s.assigned_to == r.name:
-                        print("Moving", s, "From", room, "To", r)
-                        room.curr_cap += 1
-                        s.assigned_to = room.name
-                        r.curr_cap -= 1
-                        return
-
-    def decrement_room_capacity(self, room_name: RType):
-        for r in self.rooms:
-            if r.name == room_name:
-                r.curr_cap -= 1
-                print("decrementing capacity for", r, "to", r.curr_cap)
-                if r.curr_cap == 0:
-                    self.resistuate_staff_to_room(r)
-
-    def leaving_staff(self, curr_time: datetime):
-        for s in self.staff:
-            if s.shift.et == curr_time:
-                print(s, "is leaving")
-                self.decrement_room_capacity(s.assigned_to)
-                s.last_assigned = None
-                s.assigned_to = None
-
-    def room_closes(self, curr_time):
-        for r in self.rooms:
-            if r.time_open.et == curr_time:
-                print("Found room close for:", r)
-                # must move all staff from room since it is closing
-                for s in self.staff:
-                    if s.assigned_to == r.name:
-                        self.insert_into_room(curr_time, s)
-                r.curr_cap = 0
-
+    """
 
     def manage(self):
         print(self.get_room_late_end())
@@ -143,15 +116,29 @@ class ManyRoomsManager(Manager):
         end_time = self.get_room_late_end()
         print("start is at ", curr_time)
         delta = timedelta(minutes=30)
+        base = TimeAssignment(curr_time)
+        # assume all rooms start at same time right now
+        for r in self.rooms:
+            temp = RoomAssignment(r)
+            base.add_room_assignment(temp)
 
         # start main loop of events
         while curr_time <= end_time:
             print(curr_time)
-            self.insert_new_staff(curr_time)
-            self.leaving_staff(curr_time)
-            self.room_closes(curr_time)
-            self.do_switch_staff(curr_time)
+            self.insert_new_staff(base)      # Done swap
+            self.leaving_staff(base)         # Done swap
+            self.room_closes(base)           # Done swap
+            base.swap_staff(ManyRoomsManager.SwapCutoff)
             curr_time += delta
+
+            # copy current time assignment obejct to be used for the next run as the base
+            prev_base = base
+            base = TimeAssignment(curr_time)
+            base.room_assignments = deepcopy(prev_base.room_assignments)
+            self.schedule.add_time_assignment(prev_base)
+
+        self.schedule.pretty_print_schedule()
+
 
 
 
