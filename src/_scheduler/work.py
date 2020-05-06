@@ -17,7 +17,7 @@ class RType(Enum):
 
 
 class Shift(TimePeriod):
-    def __init__(self, st: int, et: int):
+    def __init__(self, st: datetime, et: datetime):
         super().__init__(st, et)
         hours = self.dur // timedelta(hours=1)
         if hours > 5:
@@ -35,6 +35,8 @@ class Staff:
             self.shift = Shift(st, et)
         self.name = name
         self.emp_type = emp_type
+        self.last_assigned = None
+        self.assigned_to = None
 
     def __str__(self):
         return self.name
@@ -85,6 +87,12 @@ class Room:
     def __init__(self, name: RType):
         room_info = self._room_assignment(name)
         self.name = name
+
+        # used for schedule making purposes only
+        self.curr_cap = 0
+
+    def __repr__(self):
+        return f'Room("{self.name}")'
 
     def _room_assignment(self, name: RType) -> Dict[str, Any]:
         times = [datetime(1, 1, 1, 9, 30),

@@ -72,6 +72,9 @@ class TimePeriod:
             return True
         return False
 
+    def _contains_time(self, dt):
+        return self.st <= dt < self.et
+
     def _coincides(self, other):
         return max(self.st, other.st) < min(self.et, other.et)
 
