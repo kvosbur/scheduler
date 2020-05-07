@@ -1,6 +1,6 @@
 from enum import Enum, auto
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from _scheduler.timemodule import TimePeriod
 
@@ -14,6 +14,9 @@ class RType(Enum):
     GH = auto()
     SC = auto()
     CH = auto()
+
+
+Room_Mapping = {RType.GH: "GreatHall", RType.SC: "Subcellar", RType.CH: "ClubHouse"}
 
 
 class Shift(TimePeriod):
@@ -171,7 +174,6 @@ class TimeAssignment:
                 target_room.add_staff(s)
                 return
 
-
     def remove_staff(self, s: Staff):
         for room_assignment in self.room_assignments:
             if room_assignment.contains_staff(s):
@@ -218,6 +220,13 @@ class TimeAssignment:
                         break
                 index += 1
 
+    def get_room_assignment_for_staff(self, staff_name: str):
+        for room in self.room_assignments:
+            for staff in room.staff:
+                if staff.name == staff_name:
+                    return Room_Mapping[room.room.name]
+        return "-"
+
 
 class Schedule:
     def __init__(self):
@@ -249,6 +258,24 @@ class Schedule:
                         print("{:>10}".format("-"), end="")
                 print("|", end="")
             print("")
+
+    def pretty_print_staff_pov(self, all_staff: List[Staff]):
+        time_diff = self.time_assignments[1].curr_time - self.time_assignments[0].curr_time
+        # print header
+        print("{:>13}".format(""), end="|")
+        for staff in all_staff:
+            print("{:>15}".format(staff.name), end="|")
+        print("")
+
+        for time_assignment in self.time_assignments:
+            print("{} - {}".format(time_assignment.curr_time.strftime("%H:%M"),
+                                   (time_assignment.curr_time + time_diff).strftime("%H:%M")), end="|")
+            for staff in all_staff:
+                print("{:>15}".format(time_assignment.get_room_assignment_for_staff(staff.name)), end="|")
+            print("")
+
+
+
 
 
 
