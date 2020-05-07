@@ -63,59 +63,24 @@ class ManyRoomsManager(Manager):
 
     def leaving_staff(self, time_assignment: TimeAssignment):
         for s in self.staff:
-            if s.shift.et < time_assignment.curr_time:
+            if s.shift.et == time_assignment.curr_time:
                 time_assignment.remove_staff(s)
                 s.last_assigned = None
 
     def room_closes(self, time_assignment: TimeAssignment):
         for r in time_assignment.room_assignments:
-            if r.time_open.et < time_assignment.curr_time:
+            if r.time_open.et == time_assignment.curr_time:
                 print("Found room close for:", r.room)
                 # must move all staff from room since it is closing
                 while len(r.staff) > 0:
                     self.insert_into_room(time_assignment, r.staff.pop())
-
-    """
-    def get_staff_to_switch(self, curr_time: datetime) -> List[Staff]:
-        ret = []
-        for s in self.staff:
-            if s.last_assigned is not None and (curr_time - s.last_assigned) >= ManyRoomsManager.SwapCutoff:
-                ret.append(s)
-        return ret
-
-    def do_staff_swap(self, curr_time: datetime, staff_1: Staff, staff_2: Staff):
-        print("Swap from:", staff_1, staff_1.assigned_to, ",", staff_2, staff_2.assigned_to)
-        temp_room = staff_1.assigned_to
-        staff_1.assigned_to = staff_2.assigned_to
-        staff_2.assigned_to = temp_room
-        staff_1.last_assigned = curr_time
-        staff_2.last_assigned = curr_time
-        print("to:", staff_1, staff_1.assigned_to, ",", staff_2, staff_2.assigned_to)
-
-    def do_switch_staff(self, curr_time: datetime):
-        staff_to_switch = self.get_staff_to_switch(curr_time)
-        if len(staff_to_switch) > 0:
-            staff_to_switch.sort(key=lambda s: s.last_assigned)
-            print(staff_to_switch)
-            index = 0
-            while index < len(staff_to_switch) - 1:
-                if staff_to_switch[index].last_assigned == curr_time:
-                    index += 1
-                    continue
-                for attempt in range(index + 1, len(staff_to_switch)):
-                    if staff_to_switch[attempt].last_assigned != curr_time and staff_to_switch[index].assigned_to != staff_to_switch[attempt].assigned_to:
-                        self.do_staff_swap(curr_time, staff_to_switch[index], staff_to_switch[attempt])
-                        break
-
-                index += 1
-    """
 
     def manage(self):
         print(self.get_room_late_end())
         curr_time = self.get_room_early_start()
         end_time = self.get_room_late_end()
         print("start is at ", curr_time)
-        delta = timedelta(minutes=30)
+        delta = timedelta(minutes=15)
         base = TimeAssignment(curr_time)
         # assume all rooms start at same time right now
         for r in self.rooms:
