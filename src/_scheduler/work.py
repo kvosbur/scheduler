@@ -227,8 +227,9 @@ class Schedule:
         self.time_assignments.append(time_assignement)
 
     def pretty_print_schedule(self):
+        time_diff = self.time_assignments[1].curr_time - self.time_assignments[0].curr_time
         # print header
-        print("{:>22}".format(""), end="|")
+        print("{:>13}".format(""), end="|")
         for room in self.time_assignments[0].room_assignments:
             for i in range(room.max_cap):
                 if i == 0:
@@ -239,7 +240,7 @@ class Schedule:
         print("")
 
         for time_assignment in self.time_assignments:
-            print("{:>22}".format(str(time_assignment.curr_time)), end="|")
+            print("{} - {}".format(time_assignment.curr_time.strftime("%H:%M"), (time_assignment.curr_time + time_diff).strftime("%H:%M")), end="|")
             for room in time_assignment.room_assignments:
                 for i in range(max(room.max_cap, room.curr_cap)):
                     if i < room.curr_cap:
