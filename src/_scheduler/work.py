@@ -181,37 +181,42 @@ class TimeAssignment:
                     self.fill_spot(room_assignment)
                 return
 
-    def find_staff_to_swap(self, cutoff: timedelta, start_index: int):
-        if start_index >= len(self.room_assignments):
-            return None
-        for index, value in enumerate(self.room_assignments[start_index:]):
+    def find_staff_to_swap(self, cutoff: timedelta):
+        ret = []
+        for index, value in enumerate(self.room_assignments):
             for staff_index, staff in enumerate(value.staff):
                 if self.curr_time - staff.last_assigned >= cutoff:
-                    return index, staff_index
-        return None
+                    ret.append((index, staff_index, staff))
+        return ret
+
+    def _do_swap_staff(self, first, second):
+        print("Swap from:", first[2], self.room_assignments[first[0]].room, ",",
+              second[2], self.room_assignments[second[0]].room)
+        temp = first[2]
+        self.room_assignments[first[0]].staff[first[1]] = second[2]
+        self.room_assignments[second[0]].staff[second[1]] = temp
+        first[2].last_assigned = self.curr_time
+        second[2].last_assigned = self.curr_time
+        print("to:", self.room_assignments[second[0]].staff[first[1]], self.room_assignments[first[0]].room, ",",
+              self.room_assignments[second[0]].staff[second[1]], self.room_assignments[second[0]].room)
 
     def swap_staff(self, cutoff: timedelta):
-        # this is really clunky, would love to have a better solution that isn't as clunky
-        while True:
-            change = False
-            first = self.find_staff_to_swap(cutoff, 0)
-            if first is None:
-                break
-            room_index, staff_index = first
-            second = self.find_staff_to_swap(cutoff, room_index + 1)
-            if second is None:
-                break
-            # found 2 staff to swap so do swap
-            print("Swap from:", self.room_assignments[room_index].staff[staff_index], self.room_assignments[room_index].room,
-                  ",", self.room_assignments[second[0]].staff[second[1]], self.room_assignments[second[0]].room)
-            temp_staff = self.room_assignments[room_index].staff[staff_index]
-            temp_staff.last_assigned = self.curr_time
-            self.room_assignments[second[0]].staff[second[1]].last_assigned = self.curr_time
-            self.room_assignments[room_index].staff[staff_index] = self.room_assignments[second[0]].staff[second[1]]
-            self.room_assignments[second[0]].staff[second[1]] = temp_staff
-            print("To:", self.room_assignments[room_index].staff[staff_index],
-                  self.room_assignments[room_index].room,
-                  ",", self.room_assignments[second[0]].staff[second[1]], self.room_assignments[second[0]].room)
+        staff_to_swap = self.find_staff_to_swap(cutoff)
+        amount = len(staff_to_swap)
+        if amount > 1:
+            staff_to_swap.sort(key=lambda item: item[2].last_assigned)
+            index = 0
+            while index < amount - 1:
+                current_item = staff_to_swap[index]
+                if current_item[2].last_assigned == self.curr_time:
+                    index += 1
+                    continue
+                for attempt in range(index +1, amount):
+                    new_item = staff_to_swap[attempt]
+                    if new_item[2].last_assigned != self.curr_time and new_item[0] != current_item[0]:
+                        self._do_swap_staff(current_item, new_item)
+                        break
+                index += 1
 
 
 class Schedule:
