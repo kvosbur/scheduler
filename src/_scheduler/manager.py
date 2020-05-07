@@ -63,13 +63,13 @@ class ManyRoomsManager(Manager):
 
     def leaving_staff(self, time_assignment: TimeAssignment):
         for s in self.staff:
-            if s.shift.et == time_assignment.curr_time:
+            if s.shift.et < time_assignment.curr_time:
                 time_assignment.remove_staff(s)
                 s.last_assigned = None
 
     def room_closes(self, time_assignment: TimeAssignment):
         for r in time_assignment.room_assignments:
-            if r.time_open.et == time_assignment.curr_time:
+            if r.time_open.et < time_assignment.curr_time:
                 print("Found room close for:", r.room)
                 # must move all staff from room since it is closing
                 while len(r.staff) > 0:

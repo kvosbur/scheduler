@@ -241,7 +241,7 @@ class Schedule:
         for time_assignment in self.time_assignments:
             print("{:>22}".format(str(time_assignment.curr_time)), end="|")
             for room in time_assignment.room_assignments:
-                for i in range(room.max_cap):
+                for i in range(max(room.max_cap, room.curr_cap)):
                     if i < room.curr_cap:
                         print("{:>10}".format(room.staff[i].name), end="")
                     else:
