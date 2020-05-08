@@ -102,8 +102,9 @@ class ManyRoomsManager(Manager):
             base.room_assignments = deepcopy(prev_base.room_assignments)
             self.schedule.add_time_assignment(prev_base)
 
-        #self.schedule.pretty_print_staff_pov(self.staff)
-        self.schedule.pretty_print_schedule()
+        self.schedule.pretty_print_staff_pov(self.staff)
+        #self.schedule.pretty_print_schedule()
+        self.schedule.assign_breaks(self.staff)
 
 
 

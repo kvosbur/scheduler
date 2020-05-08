@@ -28,6 +28,12 @@ class Shift(TimePeriod):
         else:
             self.break_length = timedelta(hours=.5)
 
+    def break_increments(self, time_increment: timedelta):
+        return round(self.break_length / time_increment)
+
+    def valid_shift_start(self, start_time: datetime):
+        return self._contains_time(start_time) and self._contains_time(start_time + self.break_length)
+
 
 class Staff:
     def __init__(self, name: str, emp_type: EType, st: int = None,
@@ -227,6 +233,13 @@ class TimeAssignment:
                     return Room_Mapping[room.room.name]
         return "-"
 
+    def amount_extra_staff(self):
+        amount = 0
+        for room in self.room_assignments:
+            if room.curr_cap > 1:
+                amount += room.curr_cap - 1
+        return amount
+
 
 class Schedule:
     def __init__(self):
@@ -274,10 +287,60 @@ class Schedule:
                 print("{:>15}".format(time_assignment.get_room_assignment_for_staff(staff.name)), end="|")
             print("")
 
+    def print_dp_table(self, dp_table, time_diff):
+        for time_assignment in self.time_assignments:
+            print(" {} - {} ".format(time_assignment.curr_time.strftime("%H:%M"),
+                                   (time_assignment.curr_time + time_diff).strftime("%H:%M")), end="|")
+        print("")
+        for line in dp_table:
+            for entry in line:
+                print("{:^15}".format(str(entry)), end="|")
+            print("")
+
+
+    def assign_breaks(self, all_staff: List[Staff]):
+        time_diff = self.time_assignments[1].curr_time - self.time_assignments[0].curr_time
+        end = [[DPWrapper(t.amount_extra_staff()) for t in self.time_assignments] for staff in range(len(all_staff) + 1)]
+        # do 2 sorts instead of making custom comparator
+        all_staff.sort(key=lambda staff: staff.shift.st)
+        all_staff.sort(key=lambda staff: staff.shift.et)
+
+        for j, staff in enumerate(all_staff[:1]):
+            index = j + 1
+            print(index)
+            next = staff.shift.break_increments(time_diff)
+            print(staff.shift)
+            for i, time_assignment in enumerate(self.time_assignments):
+                if staff.shift.valid_shift_start(time_assignment.curr_time):
+                    if end[index - 1][i].cap > 0:
+                        print(end[index][i])
+                        end[index][i].cap = end[index - 1][i].cap - 1
+                        end[index][i].value += 1
+                        end[index][i].next.append(next)
+                    elif len(end[index - 1][i].next) > 0:
+                        end[index - 1][i].next.sort()
+                        temp = end[index - 1][i].next.pop(0)
+                        if i + temp < len(self.time_assignments):
+                            end[index][i + temp].cap = end[index - 1][i].cap - 1
+                            end[index][i + temp].value = end[index - 1][i].value + 1
+                            end[index][i + temp].value = end[index - 1][i].next.append(next)
+
+        """
+        for index, staff in enumerate(all_staff):
+            print(index, staff)
+        """
+        self.print_dp_table(end, time_diff)
 
 
 
+class DPWrapper:
+    def __init__(self, cap):
+        self.cap = cap
+        self.value = 0
+        self.next = []
 
+    def __repr__(self):
+        return f'{self.cap},{self.value},{self.next}'
 
 
 if __name__ == "__main__":
