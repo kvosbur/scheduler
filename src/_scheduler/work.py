@@ -32,7 +32,7 @@ class Shift(TimePeriod):
         return round(self.break_length / time_increment)
 
     def valid_shift_start(self, start_time: datetime):
-        return self._contains_time(start_time) and self._contains_time(start_time + self.break_length)
+        return self._contains_time_include_end(start_time) and self._contains_time_include_end(start_time + self.break_length)
 
 
 class Staff:
@@ -297,34 +297,44 @@ class Schedule:
                 print("{:^15}".format(str(entry)), end="|")
             print("")
 
-
     def assign_breaks(self, all_staff: List[Staff]):
         time_diff = self.time_assignments[1].curr_time - self.time_assignments[0].curr_time
         end = [[DPWrapper(t.amount_extra_staff()) for t in self.time_assignments] for staff in range(len(all_staff) + 1)]
         # do 2 sorts instead of making custom comparator
         all_staff.sort(key=lambda staff: staff.shift.st)
         all_staff.sort(key=lambda staff: staff.shift.et)
+        [print(staff.__repr__()) for staff in all_staff]
 
-        for j, staff in enumerate(all_staff[:1]):
+        for j, staff in enumerate(all_staff):
             index = j + 1
-            print(index)
-            next = staff.shift.break_increments(time_diff)
-            print(staff.shift)
+            n = staff.shift.break_increments(time_diff)
             for i, time_assignment in enumerate(self.time_assignments):
                 if staff.shift.valid_shift_start(time_assignment.curr_time):
                     if end[index - 1][i].cap > 0:
-                        print(end[index][i])
-                        end[index][i].cap = end[index - 1][i].cap - 1
-                        end[index][i].value += 1
-                        end[index][i].next.append(next)
+                        temp_cap = end[index - 1][i].cap - 1
+                        temp_val = end[index - 1][i].value + 1
+                        temp_n = end[index - 1][i].next + [n]
+                        if end[index][i].is_better(temp_cap, temp_val, temp_n):
+                            end[index][i].update(temp_cap, temp_val, temp_n)
+
                     elif len(end[index - 1][i].next) > 0:
                         end[index - 1][i].next.sort()
-                        temp = end[index - 1][i].next.pop(0)
-                        if i + temp < len(self.time_assignments):
-                            end[index][i + temp].cap = end[index - 1][i].cap - 1
-                            end[index][i + temp].value = end[index - 1][i].value + 1
-                            end[index][i + temp].value = end[index - 1][i].next.append(next)
+                        temp = end[index - 1][i].next[0]
+                        if i + temp < len(self.time_assignments) and staff.shift.valid_shift_start(time_assignment.curr_time + (temp * time_diff)):
+                            temp_cap = end[index - 1][i].cap
+                            temp_val = end[index - 1][i].value + 1
+                            temp_n = end[index - 1][i].decrement_all(temp)
+                            temp_n.append(n)
+                            temp_cap += DPWrapper.remove_zeros(temp_n)
+                            if end[index][i + temp].is_better(temp_cap, temp_val, temp_n):
+                                end[index][i + temp].update(temp_cap, temp_val, temp_n)
 
+
+                            for rest in range(i, i + temp):
+                                if end[index][rest].is_better_object(end[index-1][rest]):
+                                    end[index][rest].update_object(end[index-1][rest])
+                    else:
+                        end[index][i].update_object(end[index - 1][i])
         """
         for index, staff in enumerate(all_staff):
             print(index, staff)
@@ -340,7 +350,53 @@ class DPWrapper:
         self.next = []
 
     def __repr__(self):
+        self.next.sort()
         return f'{self.cap},{self.value},{self.next}'
+
+    def decrement_all(self, decrement: int):
+        temp = self.next[1:]
+        for i in range(len(temp)):
+            temp[i] -= decrement
+        return temp
+
+    @staticmethod
+    def remove_zeros(given: List[int]):
+        index = 0
+        count = 0
+        while index < len(given):
+            if given[index] == 0:
+                count += 1
+                given.pop(index)
+                index -= 1
+            index += 1
+        return count
+
+    def update(self, cap: int, value: int, n: List):
+        self.cap = cap
+        self.value = value
+        self.next = n
+
+    def update_object(self, obj):
+        self.cap = obj.cap
+        self.value = obj.value
+        self.next = obj.next[:]
+
+    def is_better_object(self, obj):
+        return self.is_better(obj.cap, obj.value, obj.next)
+
+    def is_better(self, cap: int, value: int, n: List):
+        if value > self.value:
+            return True
+        elif value < self.value:
+            return False
+        elif cap > self.cap:
+            return True
+        elif cap < self.cap:
+            return False
+        elif sum(n) < sum(self.next):
+            return True
+        else:
+            return False
 
 
 if __name__ == "__main__":
